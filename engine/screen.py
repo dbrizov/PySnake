@@ -9,6 +9,10 @@ class Screen:
         Screen._surface = pygame.display.set_mode((width, height), flags, depth)
 
     @staticmethod
+    def repaint():
+        pygame.display.flip()
+
+    @staticmethod
     def get_surface():
         return Screen._surface
 
