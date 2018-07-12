@@ -7,7 +7,7 @@ from engine.vector import Vector2
 from engine.color import Color
 
 
-def main():
+def run():
     pygame.init()
     Screen.init(width=960, height=720, flags=0, depth=32)
 
@@ -20,7 +20,3 @@ def main():
 
     GameLoop(fps=60).run()
     pygame.quit()
-
-
-if (__name__ == "__main__"):
-    main()
