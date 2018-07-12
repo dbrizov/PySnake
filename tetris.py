@@ -2,18 +2,21 @@ import pygame
 from engine.screen import Screen
 from engine.gameloop import GameLoop
 from engine.entity import EntitySpawner
-from engine.components import RenderComponent
+from engine.components import RectRenderComponent
 from engine.vector import Vector2
 from engine.color import Color
 
 
 def main():
     pygame.init()
-    Screen.init(width=960, height=720, flags=pygame.DOUBLEBUF)
+    Screen.init(width=960, height=720, flags=0, depth=32)
 
-    render_component = RenderComponent(parent_surface=Screen.get_surface(), surface_width=50, surface_height=50, surface_color=Color.GREEN)
-    entity = EntitySpawner.spawn_entity([render_component])
-    entity.get_transform().position = Vector2(50, 50)
+    background_renderer = RectRenderComponent(Vector2(Screen.get_width(), Screen.get_height()), Color(0, 0, 0))
+    EntitySpawner.spawn_entity(priority=0, list_of_components=[background_renderer])
+
+    rect_renderer = RectRenderComponent(Vector2(50, 50), Color(255, 0, 0))
+    entity = EntitySpawner.spawn_entity(priority=0, list_of_components=[rect_renderer])
+    entity.get_transform().position = Vector2(0, 0)
 
     GameLoop(fps=60).run()
     pygame.quit()

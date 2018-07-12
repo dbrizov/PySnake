@@ -16,8 +16,11 @@ class GameLoop(object):
                     running = False
 
             Time._tick()
-            entities = EntitySpawner.get_entities().copy()
-            for entity in entities:
+
+            EntitySpawner._resolve_entity_spawn_requests()
+            EntitySpawner._resolve_entity_destroy_requests()
+
+            for entity in EntitySpawner.get_entities():
                 entity.tick(Time.get_delta_time())
 
             Screen.repaint()

@@ -1,18 +1,22 @@
+from pygame import draw
 from pygame import Surface
 from engine.vector import Vector2
+from engine.color import Color
+from engine.screen import Screen
 
 
 class ComponentPriority:
-    """Entities have components, and the components have a priority.
-    This is the way that we define that component A must be updated before component B
-    """
-    PRIORITY_TRANSFORM_COMPONENT = 0
-    PRIORITY_RENDER_COMPONENT = 100000
+    TRANSFORM_COMPONENT = -1000
+    DEFAULT_COMPONENT = 0
+    RENDER_COMPONENT = 1000
 
 
 class Component(object):
     def __init__(self):
-        self._priority = -1
+        """The components in the `entity_component_list` of an `entity` are sorted by their `priority`.
+        *The `priority` cannot be changed at runtime*
+        """
+        self._priority = ComponentPriority.DEFAULT_COMPONENT
 
     def init(self, entity):
         self._entity = entity
@@ -33,18 +37,26 @@ class Component(object):
 class TransformComponent(Component):
     def __init__(self):
         Component.__init__(self)
-        self._priority = ComponentPriority.PRIORITY_TRANSFORM_COMPONENT
+        self._priority = ComponentPriority.TRANSFORM_COMPONENT
         self.position = Vector2.ZERO
 
 
 class RenderComponent(Component):
-    def __init__(self, parent_surface, surface_width, surface_height, surface_color):
+    def __init__(self, size: Vector2, color: Color):
         Component.__init__(self)
-        self._priority = ComponentPriority.PRIORITY_RENDER_COMPONENT
-        self._parent_surface = parent_surface
-        self._surface = Surface((surface_width, surface_height))
-        self._surface.fill(surface_color)
+        self._priority = ComponentPriority.RENDER_COMPONENT
+        self._surface = Surface(size)
+        self.color = color
 
     def tick(self, delta_time):
-        pos = self.get_entity().get_transform().position
-        self._parent_surface.blit(self._surface, pos)
+        raise NotImplementedError("RenderComponent is abstract")
+
+
+class RectRenderComponent(RenderComponent):
+    def __init__(self, size: Vector2, color: Color):
+        RenderComponent.__init__(self, size, color)
+        self.size = size
+
+    def tick(self, delta_teim):
+        draw.rect(self._surface, self.color, (0, 0, self.size.x, self.size.y))
+        Screen.get_surface().blit(self._surface, self.get_entity().get_transform().position)
