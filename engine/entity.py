@@ -4,88 +4,88 @@ from sortedcontainers import SortedSet
 
 
 class Entity:
-    def __init__(self, priority, list_of_components):
+    def __init__(self, priority, initialComponents):
         """
-        `priority` -> `enter_play()`, `exit_play()` and `tick()` are called for every entity.
+        `priority` -> `enterPlay()`, `exitPlay()` and `tick()` are called for every entity.
         The `priority` indicated in which order the entities will be updated.
         If entity `A` has `priority=0`, and entity `B` has `priority=1`, `A` will be updated before `B`.
         *It cannot be changed at runtime*
 
-        `list_of_components` -> the initial list of components that the entity has
+        `initialComponents` -> the initial list of components that the entity has
         """
         self._priority = priority
         self._transform = TransformComponent()
         self._components = SortedList(iterable=[self._transform], key=(lambda comp: comp._priority))
-        if (list_of_components is not None):
-            self._components.update(list_of_components)
+        if (initialComponents is not None):
+            self._components.update(initialComponents)
 
     def init(self):
         for comp in self._components:
             comp.init(self)
 
-    def enter_play(self):
+    def enterPlay(self):
         for comp in self._components:
-            comp.enter_play()
+            comp.enterPlay()
 
-    def exit_play(self):
+    def exitPlay(self):
         for comp in self._components:
-            comp.exit_play()
+            comp.exitPlay()
 
-    def tick(self, delta_time):
+    def tick(self, deltaTime):
         for comp in self._components:
-            comp.tick(delta_time)
+            comp.tick(deltaTime)
 
-    def get_transform(self):
+    def getTransform(self):
         return self._transform
 
-    def add_component(self, component):
+    def addComponent(self, component):
         self._components.add(component)
 
-    def remove_component(self, component):
+    def removeComponent(self, component):
         self._components.remove(component)
 
-    def get_component(self, class_obj):
+    def getComponent(self, classObj):
         for comp in self._components:
-            if (isinstance(comp, class_obj)):
+            if (isinstance(comp, classObj)):
                 return comp
         return None
 
 
 class EntitySpawner:
     _entities = SortedSet(key=(lambda entity: entity._priority))
-    _entity_spawn_requests = SortedList(key=(lambda entity: entity._priority))
-    _entity_destroy_requests = SortedList(key=(lambda entity: entity._priority))
+    _entitySpawnRequests = SortedList(key=(lambda entity: entity._priority))
+    _entityDestroyRequests = SortedList(key=(lambda entity: entity._priority))
 
     @staticmethod
-    def get_entities():
+    def getEntities():
         """Get all active entities"""
         return EntitySpawner._entities
 
     @staticmethod
-    def spawn_entity(priority=0, list_of_components=None):
-        """`entity.init()` is called immediatelly. `entity.enter_play()` will be called on the next frame"""
-        entity = Entity(priority, list_of_components)
+    def spawnEntity(priority=0, initialComponents=None):
+        """`entity.init()` is called immediatelly. `entity.enterPlay()` will be called on the next frame"""
+        entity = Entity(priority, initialComponents)
         entity.init()
-        EntitySpawner._entity_spawn_requests.add(entity)
+        EntitySpawner._entitySpawnRequests.add(entity)
         return entity
 
     @staticmethod
-    def destroy_entity(entity):
-        """`entity.exit_play` will be called on the next frame"""
-        EntitySpawner._entity_destroy_requests.add(entity)
+    def destroyEntity(entity):
+        """`entity.exitPlay` will be called on the next frame"""
+        EntitySpawner._entityDestroyRequests.add(entity)
 
     @staticmethod
-    def _resolve_entity_spawn_requests():
-        for entity in EntitySpawner._entity_spawn_requests:
+    def resolveEntitySpawnRequests_Internal():
+        for entity in EntitySpawner._entitySpawnRequests:
             EntitySpawner._entities.add(entity)
-            entity.enter_play()
+            entity.enterPlay()
 
-        EntitySpawner._entity_spawn_requests.clear()
+        EntitySpawner._entitySpawnRequests.clear()
 
     @staticmethod
-    def _resolve_entity_destroy_requests():
-        for entity in EntitySpawner._entity_destroy_requests:
+    def resolveEntityDestroyRequests_Internal():
+        for entity in EntitySpawner._entityDestroyRequests:
             EntitySpawner._entities.remove(entity)
-            entity.exit_play()
+            entity.exitPlay()
 
-        EntitySpawner._entity_destroy_requests.clear()
+        EntitySpawner._entityDestroyRequests.clear()

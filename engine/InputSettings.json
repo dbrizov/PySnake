@@ -1,0 +1,21 @@
+{
+    "actionMappings": {
+        "left": [
+            "K_LEFT",
+            "K_a"
+        ],
+        "right": [
+            "K_RIGHT",
+            "K_d"
+        ],
+        "up": [
+            "K_UP",
+            "K_w"
+        ],
+        "down": [
+            "K_DOWN",
+            "K_s"
+        ]
+    },
+    "axisMappings": []
+}

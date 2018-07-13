@@ -4,25 +4,25 @@ from pygame import time
 class Time:
     _clock = time.Clock()
     _fps = 60
-    _play_time = 0.0
+    _playTime = 0.0
 
     @staticmethod
-    def _tick():
+    def tick_Internal():
         milliseconds = Time._clock.tick(Time._fps)
-        Time._play_time += milliseconds / 1000.0
+        Time._playTime += milliseconds / 1000.0
 
     @staticmethod
-    def get_delta_time():
+    def getDeltaTime():
         return Time._clock.get_time()
 
     @staticmethod
-    def get_play_time():
-        return Time._play_time
+    def getPlayTime():
+        return Time._playTime
 
     @staticmethod
-    def get_fps():
+    def getFps():
         return Time. _clock.get_fps()
 
     @staticmethod
-    def set_fps(fps):
+    def setFps(fps):
         Time._fps = fps

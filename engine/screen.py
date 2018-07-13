@@ -13,17 +13,17 @@ class Screen:
         pygame.display.flip()
 
     @staticmethod
-    def get_surface():
+    def getSurface():
         return Screen._surface
 
     @staticmethod
-    def get_size():
+    def getSize():
         return Screen._surface.get_size()
 
     @staticmethod
-    def get_width():
+    def getWidth():
         return Screen._surface.get_width()
 
     @staticmethod
-    def get_height():
+    def getHeight():
         return Screen._surface.get_height()

@@ -6,7 +6,7 @@ from engine.entity import EntitySpawner
 
 class GameLoop(object):
     def __init__(self, fps=60):
-        Time.set_fps(fps)
+        Time.setFps(fps)
 
     def run(self):
         running = True
@@ -14,13 +14,16 @@ class GameLoop(object):
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        running = False
 
-            Time._tick()
+            Time.tick_Internal()
 
-            EntitySpawner._resolve_entity_spawn_requests()
-            EntitySpawner._resolve_entity_destroy_requests()
+            EntitySpawner.resolveEntitySpawnRequests_Internal()
+            EntitySpawner.resolveEntityDestroyRequests_Internal()
 
-            for entity in EntitySpawner.get_entities():
-                entity.tick(Time.get_delta_time())
+            for entity in EntitySpawner.getEntities():
+                entity.tick(Time.getDeltaTime())
 
             Screen.repaint()

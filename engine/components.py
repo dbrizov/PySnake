@@ -6,9 +6,10 @@ from engine.screen import Screen
 
 
 class ComponentPriority:
-    TRANSFORM_COMPONENT = -1000
+    INPUT_COMPONENT = -150
+    TRANSFORM_COMPONENT = -100
     DEFAULT_COMPONENT = 0
-    RENDER_COMPONENT = 1000
+    RENDER_COMPONENT = 100
 
 
 class Component(object):
@@ -21,16 +22,16 @@ class Component(object):
     def init(self, entity):
         self._entity = entity
 
-    def enter_play(self):
+    def enterPlay(self):
         pass
 
-    def exit_play(self):
+    def exitPlay(self):
         pass
 
     def tick(self, delta_time):
         pass
 
-    def get_entity(self):
+    def getEntity(self):
         return self._entity
 
 
@@ -48,7 +49,7 @@ class RenderComponent(Component):
         self._surface = Surface(size)
         self.color = color
 
-    def tick(self, delta_time):
+    def tick(self, deltaTime):
         raise NotImplementedError("RenderComponent is abstract")
 
 
@@ -57,6 +58,15 @@ class RectRenderComponent(RenderComponent):
         RenderComponent.__init__(self, size, color)
         self.size = size
 
-    def tick(self, delta_teim):
+    def tick(self, deltaTime):
         draw.rect(self._surface, self.color, (0, 0, self.size.x, self.size.y))
-        Screen.get_surface().blit(self._surface, self.get_entity().get_transform().position)
+        Screen.getSurface().blit(self._surface, self.getEntity().getTransform().position)
+
+
+class InputComponent(Component):
+    def __init__(self):
+        Component.__init__(self)
+        self._priority = ComponentPriority.INPUT_COMPONENT
+
+    def tick(self, deltaTime):
+        pass
