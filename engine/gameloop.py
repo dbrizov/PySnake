@@ -2,6 +2,7 @@ import pygame
 from engine.time import Time
 from engine.screen import Screen
 from engine.entity import EntitySpawner
+from engine.input import Input
 
 
 class GameLoop(object):
@@ -19,6 +20,7 @@ class GameLoop(object):
                         running = False
 
             Time.tick_Internal()
+            Input.tick_Internal(Time.getDeltaTime())
 
             EntitySpawner.resolveEntitySpawnRequests_Internal()
             EntitySpawner.resolveEntityDestroyRequests_Internal()
