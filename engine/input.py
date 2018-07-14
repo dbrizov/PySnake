@@ -1,6 +1,7 @@
 import pygame
 import json
 import os
+import engine.math
 from engine.events import EventHook
 
 
@@ -141,11 +142,19 @@ KEY_NAMES_BY_KEY_CODE = {
 }
 
 
-def getInputSettings():
+def getInputSettings_Internal():
     dirPath = os.path.dirname(os.path.realpath(__file__))
     filePath = "{0}\\{1}".format(dirPath, "InputSettings.json")
     with open(filePath, "r") as fileStream:
         return json.load(fileStream)
+
+
+def createAxisValues_Internal():
+    axisValues = dict()
+    axisMappings = getInputSettings_Internal()["axisMappings"]
+    for axis in axisMappings:
+        axisValues[axis] = 0.0
+    return axisValues
 
 
 class InputEvent:
@@ -153,47 +162,26 @@ class InputEvent:
     EVENT_TYPE_RELEASED = 1
     EVENT_TYPE_AXIS = 2
 
-    def __init__(self, name: str, type: int):
+    def __init__(self, name: str, type: int, axisValue: float = 0):
         self.name = name
         self.type = type
+        self.axisValue = axisValue
 
     def __str__(self):
-        return "[InputEvent: name={0} | type={1}]".format(self.name, self.type)
+        return "[InputEvent: name={0} | type={1} | axisValue={2:.2f}]".format(self.name, self.type, self.axisValue)
 
 
 class Input:
     onInputEvent = EventHook()
 
-    _inputSettings = getInputSettings()
+    _inputSettings = getInputSettings_Internal()
+    _axisValues = createAxisValues_Internal()
     _pressedKeysThisFrame = set()
     _pressedKeysLastFrame = set()
 
     @staticmethod
     def getInputSettings():
         return Input._inputSettings
-
-    @staticmethod
-    def tick_Internal(deltaTime):
-        Input._pressedKeysLastFrame = Input._pressedKeysThisFrame.copy()
-        Input.updatePressedKeysThisFrame_Internal()
-
-        actionMappings = Input.getActionMappings()
-        for action, keys in actionMappings.items():
-            for key in keys:
-                if ((key in Input._pressedKeysThisFrame) and (key in Input._pressedKeysLastFrame)):
-                    Input.onInputEvent.invoke(InputEvent(action, InputEvent.EVENT_TYPE_AXIS))
-                elif ((key in Input._pressedKeysThisFrame) and not (key in Input._pressedKeysLastFrame)):
-                    Input.onInputEvent.invoke(InputEvent(action, InputEvent.EVENT_TYPE_PRESSED))
-                elif ((key in Input._pressedKeysLastFrame) and not (Input._pressedKeysThisFrame)):
-                    Input.onInputEvent.invoke(InputEvent(action, InputEvent.EVENT_TYPE_RELEASED))
-
-    @staticmethod
-    def updatePressedKeysThisFrame_Internal():
-        Input._pressedKeysThisFrame.clear()
-        pressedKeyFlags = pygame.key.get_pressed()
-        for keyCode, keyName in KEY_NAMES_BY_KEY_CODE.items():
-            if (pressedKeyFlags[keyCode]):
-                Input._pressedKeysThisFrame.add(keyName)
 
     @staticmethod
     def getActionMappings():
@@ -206,3 +194,63 @@ class Input:
         inputSettings = Input.getInputSettings()
         axisMappings = inputSettings["axisMappings"]
         return axisMappings
+
+    @staticmethod
+    def tick_Internal(deltaTime):
+        Input.cachePressedKeysFromLastFrame_Internal()
+        Input.updatePressedKeysThisFrame_Internal()
+
+        # Dispatch action events
+        actionMappings = Input.getActionMappings()
+        for action, keys in actionMappings.items():
+            for key in keys:
+                if ((key in Input._pressedKeysThisFrame) and not (key in Input._pressedKeysLastFrame)):
+                    Input.onInputEvent.invoke(InputEvent(action, InputEvent.EVENT_TYPE_PRESSED))
+                elif ((key in Input._pressedKeysLastFrame) and not (key in Input._pressedKeysThisFrame)):
+                    Input.onInputEvent.invoke(InputEvent(action, InputEvent.EVENT_TYPE_RELEASED))
+
+        # Update axis values
+        axisMappings = Input.getAxisMappings()
+        for axis, axisSettings in axisMappings.items():
+            axisAcceleration = axisSettings["acceleration"]
+            axisDeceleration = axisSettings["deceleration"]
+            axisPositiveKeys = axisSettings["positive"]
+            axisNegativeKeys = axisSettings["negative"]
+
+            anyPositiveKey = False
+            for posKey in axisPositiveKeys:
+                if (posKey in Input._pressedKeysThisFrame):
+                    anyPositiveKey = True
+
+            anyNegativeKey = False
+            for negKey in axisNegativeKeys:
+                if (negKey in Input._pressedKeysThisFrame):
+                    anyNegativeKey = True
+
+            axisValue = Input._axisValues[axis]
+            if ((anyPositiveKey and anyNegativeKey) or (not (anyPositiveKey or anyNegativeKey))):
+                if (axisValue < 0.0):
+                    axisValue = engine.math.clamp(axisValue + axisDeceleration * deltaTime, -1.0, 0.0)
+                elif(axisValue > 0.0):
+                    axisValue = engine.math.clamp(axisValue - axisDeceleration * deltaTime, 0.0, 1.0)
+            elif (anyPositiveKey and not anyNegativeKey):
+                axisValue = engine.math.clamp(axisValue + axisAcceleration * deltaTime, -1.0, 1.0)
+            elif(anyNegativeKey and not anyPositiveKey):
+                axisValue = engine.math.clamp(axisValue - axisAcceleration * deltaTime, -1.0, 1.0)
+
+            Input._axisValues[axis] = axisValue
+            Input.onInputEvent.invoke(InputEvent(axis, InputEvent.EVENT_TYPE_AXIS, axisValue))
+
+    @staticmethod
+    def cachePressedKeysFromLastFrame_Internal():
+        Input._pressedKeysLastFrame.clear()
+        for key in Input._pressedKeysThisFrame:
+            Input._pressedKeysLastFrame.add(key)
+
+    @staticmethod
+    def updatePressedKeysThisFrame_Internal():
+        Input._pressedKeysThisFrame.clear()
+        pressedKeyFlags = pygame.key.get_pressed()
+        for keyCode, keyName in KEY_NAMES_BY_KEY_CODE.items():
+            if (pressedKeyFlags[keyCode]):
+                Input._pressedKeysThisFrame.add(keyName)

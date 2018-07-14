@@ -17,5 +17,30 @@
             "K_s"
         ]
     },
-    "axisMappings": []
+    "axisMappings": {
+        "horizontal": {
+            "acceleration": 3,
+            "deceleration": 3,
+            "positive": [
+                "K_RIGHT",
+                "K_d"
+            ],
+            "negative": [
+                "K_LEFT",
+                "K_a"
+            ]
+        },
+        "vertical": {
+            "acceleration": 3,
+            "deceleration": 3,
+            "positive": [
+                "K_UP",
+                "K_w"
+            ],
+            "negative": [
+                "K_DOWN",
+                "K_s"
+            ]
+        }
+    }
 }

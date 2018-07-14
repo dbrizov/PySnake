@@ -13,7 +13,8 @@ class Time:
 
     @staticmethod
     def getDeltaTime():
-        return Time._clock.get_time()
+        milliseconds = Time._clock.get_time()
+        return milliseconds / 1000.0
 
     @staticmethod
     def getPlayTime():
