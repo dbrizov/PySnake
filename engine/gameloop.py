@@ -20,10 +20,11 @@ class GameLoop(object):
                         running = False
 
             Time.tick_Internal()
-            Input.tick_Internal(Time.getDeltaTime())
 
             EntitySpawner.resolveEntitySpawnRequests_Internal()
             EntitySpawner.resolveEntityDestroyRequests_Internal()
+            
+            Input.tick_Internal(Time.getDeltaTime())
 
             for entity in EntitySpawner.getEntities():
                 entity.tick(Time.getDeltaTime())

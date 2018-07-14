@@ -4,15 +4,14 @@ from sortedcontainers import SortedSet
 
 
 class Entity:
-    def __init__(self, priority, initialComponents):
+    def __init__(self, priority=0, initialComponents=None):
         """
         `priority` -> `enterPlay()`, `exitPlay()` and `tick()` are called for every entity.
         The `priority` indicated in which order the entities will be updated.
         If entity `A` has `priority=0`, and entity `B` has `priority=1`, `A` will be updated before `B`.
         *It cannot be changed at runtime*
-
-        `initialComponents` -> the initial list of components that the entity has
         """
+        self._isInPlay = False
         self._priority = priority
         self._transform = TransformComponent()
         self._components = SortedList(iterable=[self._transform], key=(lambda comp: comp._priority))
@@ -24,10 +23,12 @@ class Entity:
             comp.init(self)
 
     def enterPlay(self):
+        self._isInPlay = True
         for comp in self._components:
             comp.enterPlay()
 
     def exitPlay(self):
+        self._isInPlay = False
         for comp in self._components:
             comp.exitPlay()
 
@@ -35,14 +36,22 @@ class Entity:
         for comp in self._components:
             comp.tick(deltaTime)
 
+    def isInPlay(self):
+        return self._isInPlay
+
     def getTransform(self):
         return self._transform
 
     def addComponent(self, component):
         self._components.add(component)
+        component.init(self)
+        if (self.isInPlay()):
+            component.enterPlay()
 
     def removeComponent(self, component):
         self._components.remove(component)
+        if (self.isInPlay()):
+            component.exitPlay()
 
     def getComponent(self, classObj):
         for comp in self._components:
@@ -62,9 +71,9 @@ class EntitySpawner:
         return EntitySpawner._entities
 
     @staticmethod
-    def spawnEntity(priority=0, initialComponents=None):
+    def spawnEntity(entityClass, priority=0, initialComponents=None):
         """`entity.init()` is called immediatelly. `entity.enterPlay()` will be called on the next frame"""
-        entity = Entity(priority, initialComponents)
+        entity = entityClass(priority, initialComponents)
         entity.init()
         EntitySpawner._entitySpawnRequests.add(entity)
         return entity
