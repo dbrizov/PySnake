@@ -12,7 +12,7 @@ def run():
     pygame.init()
     Screen.init(width=960, height=720, flags=0, depth=32)
 
-    backgroundEntity = EntitySpawner.spawnEntity(Entity, initialComponents=[
+    EntitySpawner.spawnEntity(Entity, initialComponents=[
         RectRenderComponent(Vector2(Screen.getWidth(), Screen.getHeight()), Color(0, 0, 0))
     ])
 

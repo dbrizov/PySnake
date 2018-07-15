@@ -23,7 +23,7 @@ class GameLoop(object):
 
             EntitySpawner.resolveEntitySpawnRequests_Internal()
             EntitySpawner.resolveEntityDestroyRequests_Internal()
-            
+
             Input.tick_Internal(Time.getDeltaTime())
 
             for entity in EntitySpawner.getEntities():

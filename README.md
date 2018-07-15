@@ -1,2 +1,2 @@
-# PyTetris
-Tetris game written in Python
+# PySnake
+Snake game written in Python

@@ -1,5 +1,5 @@
-from pytetris import tetris
+from pysnake import pysnake
 
 
 if (__name__ == "__main__"):
-    tetris.run()
+    pysnake.run()
