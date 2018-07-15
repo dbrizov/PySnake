@@ -15,10 +15,10 @@ class Color(tuple):
         return Color(self.r - color.r, self.g - color.g, self.b - color.b, self.a - color.a)
 
     def __mul__(self, scalar):
-        return Color(self.r * scalar, self.g * scalar, self.b * scalar, self.a * scalar)
+        return Color(int(self.r * scalar), int(self.g * scalar), int(self.b * scalar), int(self.a * scalar))
 
     def __truediv__(self, scalar):
-        return Color(self.r / scalar, self.g / scalar, self.b / scalar, self.a / scalar)
+        return Color(int(self.r / scalar), int(self.g / scalar), int(self.b / scalar), int(self.a / scalar))
 
     def __str__(self):
         return "({0}, {1}, {2}, {3})".format(self.r, self.b, self.b, self.a)

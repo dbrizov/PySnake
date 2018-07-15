@@ -10,6 +10,8 @@ class Entity:
         The `priority` indicated in which order the entities will be updated.
         If entity `A` has `priority=0`, and entity `B` has `priority=1`, `A` will be updated before `B`.
         *It cannot be changed at runtime*
+
+        `initialComponents` -> the initial components list
         """
         self._isInPlay = False
         self._priority = priority
@@ -72,9 +74,9 @@ class EntitySpawner:
         return EntitySpawner._entities
 
     @staticmethod
-    def spawnEntity(entityClass, priority=0, initialComponents=None):
+    def spawnEntity(entityClass, *args, priority=0, initialComponents=None):
         """`entity.init()` is called immediatelly. `entity.enterPlay()` will be called on the next frame"""
-        entity = entityClass(priority, initialComponents)
+        entity = entityClass(*args, priority, initialComponents)
         entity.init()
         EntitySpawner._entitySpawnRequests.add(entity)
         return entity

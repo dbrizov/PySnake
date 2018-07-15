@@ -45,23 +45,29 @@ class TransformComponent(Component):
 
 
 class RenderComponent(Component):
-    def __init__(self, size: Vector2, color: Color):
+    def __init__(self, surfaceSize: Vector2):
         Component.__init__(self)
         self._priority = ComponentPriority.RENDER_COMPONENT
-        self._surface = Surface(size)
-        self.color = color
+        self._surface = Surface(surfaceSize)
 
     def tick(self, deltaTime):
         raise NotImplementedError("RenderComponent is abstract")
 
 
 class RectRenderComponent(RenderComponent):
-    def __init__(self, size: Vector2, color: Color):
-        RenderComponent.__init__(self, size, color)
-        self.size = size
+    def __init__(self, surfaceSize: Vector2, rectSize: Vector2, color: Color, posOffset=Vector2.ZERO, border=0):
+        RenderComponent.__init__(self, surfaceSize)
+        self.rectSize = rectSize
+        self.color = color
+        self.posOffset = posOffset
+        self.border = border
 
     def tick(self, deltaTime):
-        draw.rect(self._surface, self.color, (0, 0, self.size.x, self.size.y))
+        draw.rect(
+            self._surface,
+            self.color,
+            (self.posOffset.x, self.posOffset.y, self.rectSize.x, self.rectSize.y),
+            self.border)
         Screen.getSurface().blit(self._surface, self.getEntity().getTransform().position)
 
 
