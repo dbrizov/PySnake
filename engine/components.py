@@ -3,6 +3,8 @@ from pygame import Surface
 from engine.vector import Vector2
 from engine.color import Color
 from engine.screen import Screen
+from engine.input import Input
+from engine.input import InputEvent
 
 
 class ComponentPriority:
@@ -67,6 +69,57 @@ class InputComponent(Component):
     def __init__(self):
         Component.__init__(self)
         self._priority = ComponentPriority.INPUT_COMPONENT
+        self._boundFunctionsByAxis = dict()
+        self._boundFunctionsByPressedAction = dict()
+        self._boundFunctionsByReleasedAction = dict()
 
-    def tick(self, deltaTime):
-        pass
+    def enterPlay(self):
+        Component.enterPlay(self)
+        Input.onInputEvent += self.onInputEvent_Internal
+
+    def exitPlay(self):
+        Component.exitPlay(self)
+        Input.onInputEvent -= self.onInputEvent_Internal
+
+    def bindAxis(self, axisName, function):
+        if (axisName not in self._boundFunctionsByAxis):
+            self._boundFunctionsByAxis[axisName] = list()
+        self._boundFunctionsByAxis[axisName].append(function)
+
+    def unbindAxis(self, axisName, function):
+        self._boundFunctionsByAxis[axisName].remove(function)
+
+    def bindAction(self, actionName, eventType, function):
+        if (eventType == InputEvent.EVENT_TYPE_PRESSED):
+            if (actionName not in self._boundFunctionsByPressedAction):
+                self._boundFunctionsByPressedAction[actionName] = list()
+            self._boundFunctionsByPressedAction[actionName].append(function)
+        elif (eventType == InputEvent.EVENT_TYPE_RELEASED):
+            if (actionName not in self._boundFunctionsByReleasedAction):
+                self._boundFunctionsByReleasedAction[actionName] = list()
+            self._boundFunctionsByReleasedAction[actionName].append(function)
+
+    def unbindAction(self, actionName, eventType, function):
+        if (eventType == InputEvent.EVENT_TYPE_PRESSED):
+            self._boundFunctionsByPressedAction[actionName].remove(function)
+        elif (eventType == InputEvent.EVENT_TYPE_RELEASED):
+            self._boundFunctionsByReleasedAction[actionName].remove(function)
+
+    def clearBindings(self):
+        self._boundFunctionsByAxis.clear()
+        self._boundFunctionsByPressedAction.clear()
+        self._boundFunctionsByReleasedAction.clear()
+
+    def onInputEvent_Internal(self, inputEvent):
+        if (inputEvent.type == InputEvent.EVENT_TYPE_AXIS):
+            if (inputEvent.name in self._boundFunctionsByAxis):
+                for func in self._boundFunctionsByAxis[inputEvent.name]:
+                    func(inputEvent.axisValue)
+        elif (inputEvent.type == InputEvent.EVENT_TYPE_PRESSED):
+            if (inputEvent.name in self._boundFunctionsByPressedAction):
+                for func in self._boundFunctionsByPressedAction[inputEvent.name]:
+                    func()
+        elif (inputEvent.type == InputEvent.EVENT_TYPE_RELEASED):
+            if (inputEvent.name in self._boundFunctionsByReleasedAction):
+                for func in self._boundFunctionsByReleasedAction[inputEvent.name]:
+                    func()

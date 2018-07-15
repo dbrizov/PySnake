@@ -47,6 +47,7 @@ class Entity:
         component.init(self)
         if (self.isInPlay()):
             component.enterPlay()
+        return component
 
     def removeComponent(self, component):
         self._components.remove(component)
