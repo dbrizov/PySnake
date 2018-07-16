@@ -21,6 +21,9 @@ class Vector2(tuple):
     def __truediv__(self, scalar):
         return Vector2(self.x / scalar, self.y / scalar)
 
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+
     def __str__(self):
         return "({0:.2f}, {1:.2f})".format(self.x, self.y)
 

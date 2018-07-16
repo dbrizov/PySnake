@@ -1,5 +1,4 @@
-from pygame import draw
-from pygame import Surface
+import pygame
 from engine.vector import Vector2
 from engine.color import Color
 from engine.screen import Screen
@@ -48,7 +47,7 @@ class RenderComponent(Component):
     def __init__(self, surfaceSize: Vector2):
         Component.__init__(self)
         self._priority = ComponentPriority.RENDER_COMPONENT
-        self._surface = Surface(surfaceSize)
+        self._surface = pygame.Surface(surfaceSize, pygame.SRCALPHA, 32)
 
     def tick(self, deltaTime):
         raise NotImplementedError("RenderComponent is abstract")
@@ -63,7 +62,7 @@ class RectRenderComponent(RenderComponent):
         self.border = border
 
     def tick(self, deltaTime):
-        draw.rect(
+        pygame.draw.rect(
             self._surface,
             self.color,
             (self.posOffset.x, self.posOffset.y, self.rectSize.x, self.rectSize.y),
