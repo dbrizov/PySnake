@@ -6,6 +6,9 @@ from engine.gameloop import GameLoop
 from engine.entity import Entity
 from engine.entity import EntitySpawner
 from engine.components import RenderComponent
+from engine.components import RectRenderComponent
+from engine.components import InputComponent
+from engine.input import InputEvent
 from engine.vector import Vector2
 from engine.color import Color
 
@@ -13,7 +16,7 @@ from engine.color import Color
 DIRECTION_LEFT = Vector2(0, -1)
 DIRECTION_RIGHT = Vector2(0, 1)
 DIRECTION_UP = Vector2(-1, 0)
-DIRECTION_DOW = Vector2(1, 0)
+DIRECTION_DOWN = Vector2(1, 0)
 
 
 def getCellMatrix():
@@ -72,8 +75,9 @@ class CellEntity(Entity):
         self._size = size
 
     def init(self):
+        Entity.init(self)
         if (self._type == CellEntity.CELL_TYPE_EMPTY):
-            self.addComponent(CellRenderComponent(self._size, self._size, 2, Color.WHITE * 0.1, Color.BLACK))
+            self.addComponent(CellRenderComponent(self._size, self._size, 2, Color(25, 25, 25), Color.BLACK))
         if (self._type == CellEntity.CELL_TYPE_BLOCK):
             self.addComponent(CellRenderComponent(self._size, self._size, 2, Color.BLUE, Color.BLACK))
 
@@ -119,23 +123,19 @@ class BoardEntity(Entity):
 
 
 class SnakeRenderComponent(RenderComponent):
-    def __init__(self, surfaceSize, rectSize, borderWidth, bodyColor, headColor, borderColor):
+    def __init__(self, surfaceSize, rectSize, borderWidth, bodyColor, borderColor):
         RenderComponent.__init__(self, surfaceSize)
         self.rectSize = rectSize
         self.borderWidth = borderWidth
         self.bodyColor = bodyColor
-        self.headColor = headColor
         self.borderColor = borderColor
 
     def tick(self, deltaTime):
         boardPos = self.getSnake().getBoard().getTransform().position
-        for pos in self.getSnake()._deque:
+        self._surface.fill(Color.NONE)
+        for pos in self.getSnake().getBodyPositions():
             rectPos = boardPos + Vector2(pos.y * self.rectSize.x, pos.x * self.rectSize.y)
-            if (pos == self.getSnake().getHeadPos()):
-                pygame.draw.rect(self._surface, self.headColor, (rectPos.x, rectPos.y, self.rectSize.x, self.rectSize.y))
-            else:
-                pygame.draw.rect(self._surface, self.bodyColor, (rectPos.x, rectPos.y, self.rectSize.x, self.rectSize.y))
-
+            pygame.draw.rect(self._surface, self.bodyColor, (rectPos.x, rectPos.y, self.rectSize.x, self.rectSize.y))
             pygame.draw.rect(
                 self._surface,
                 self.borderColor,
@@ -149,7 +149,7 @@ class SnakeRenderComponent(RenderComponent):
 
 
 class SnakeEntity(Entity):
-    def __init__(self, board, initialSize, initialHeadPos, initialDir, rectSize, priority=0, initialComponents=None):
+    def __init__(self, board, speed, initialSize, initialHeadPos, initialDir, rectSize, priority=0, initialComponents=None):
         Entity.__init__(self, priority, initialComponents)
         self._board = board
         self._headPos = initialHeadPos
@@ -159,23 +159,58 @@ class SnakeEntity(Entity):
         for i in range(initialSize):
             self._deque.appendleft(initialHeadPos - initialDir * i)
 
+        self.speed = speed
+        self._passedDistance = 0.0
+
     def init(self):
         Entity.init(self)
-        self.addComponent(SnakeRenderComponent(Screen.getSize(), self._rectSize, 2, Color.RED, Color.GREEN, Color.BLACK))
+        self._renderComponent = self.addComponent(
+            SnakeRenderComponent(Screen.getSize(), self._rectSize, 2, Color.RED, Color.BLACK))
+
+        self._inputComponent = self.addComponent(InputComponent())
+        self._inputComponent.bindAction("left", InputEvent.EVENT_TYPE_PRESSED, lambda: self.changeDirection(DIRECTION_LEFT))
+        self._inputComponent.bindAction("right", InputEvent.EVENT_TYPE_PRESSED, lambda: self.changeDirection(DIRECTION_RIGHT))
+        self._inputComponent.bindAction("up", InputEvent.EVENT_TYPE_PRESSED, lambda: self.changeDirection(DIRECTION_UP))
+        self._inputComponent.bindAction("down", InputEvent.EVENT_TYPE_PRESSED, lambda: self.changeDirection(DIRECTION_DOWN))
+
+    def tick(self, deltaTime):
+        Entity.tick(self, deltaTime)
+        self._passedDistance += self.speed * deltaTime
+        if (self._passedDistance > 1.0):
+            self._passedDistance -= 1.0
+            self._deque.popleft()
+            self._deque.append(self.getNextHeadPos())
+            self._headPos = self.getNextHeadPos()
 
     def getBoard(self):
         return self._board
 
+    def getBodyPositions(self):
+        return iter(self._deque)
+
     def getHeadPos(self):
         return self._headPos
+
+    def getNextHeadPos(self):
+        return self._headPos + self._dir
+
+    def changeDirection(self, newDir):
+        if (newDir != self._dir * -1.0):
+            self._dir = newDir
 
 
 def run():
     pygame.init()
-    Screen.init(width=960, height=720, flags=0, depth=32)
+    Screen.init(width=600, height=450, flags=0, depth=32)
 
-    boardEntity = EntitySpawner.spawnEntity(BoardEntity, getCellMatrix(), Vector2(32, 32))
-    EntitySpawner.spawnEntity(SnakeEntity, boardEntity, 3, Vector2(10, 15), DIRECTION_RIGHT, Vector2(32, 32))
+    backgroundEntity = EntitySpawner.spawnEntity(Entity)
+    backgroundEntity.addComponent(RectRenderComponent(Screen.getSize(), Screen.getSize(), Color.BLACK))
+    boardEntity = EntitySpawner.spawnEntity(BoardEntity, getCellMatrix(), Vector2(20, 20))
+    EntitySpawner.spawnEntity(SnakeEntity, boardEntity, 5, 3, Vector2(10, 5), DIRECTION_RIGHT, Vector2(20, 20))
 
     GameLoop(fps=60).run()
     pygame.quit()
+
+
+if (__name__ == "__main__"):
+    run()

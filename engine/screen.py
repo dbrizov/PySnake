@@ -1,4 +1,5 @@
 import pygame.display
+from engine.vector import Vector2
 
 
 class Screen:
@@ -18,7 +19,7 @@ class Screen:
 
     @staticmethod
     def getSize():
-        return Screen._surface.get_size()
+        return Vector2(Screen._surface.get_width(), Screen._surface.get_height())
 
     @staticmethod
     def getWidth():

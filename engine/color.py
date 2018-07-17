@@ -30,6 +30,7 @@ class Color(tuple):
         yield self.a
 
 
+Color.NONE = Color(0, 0, 0, 0)
 Color.BLACK = Color(0, 0, 0)
 Color.WHITE = Color(255, 255, 255)
 Color.GRAY = Color(128, 128, 128)
