@@ -18,6 +18,8 @@ DIRECTION_RIGHT = Vector2(0, 1)
 DIRECTION_UP = Vector2(-1, 0)
 DIRECTION_DOWN = Vector2(1, 0)
 
+CELL_BORDER_WIDTH = 2
+
 
 def getCellMatrix():
     matrix = [
@@ -47,7 +49,7 @@ def getCellMatrix():
 
 
 class CellRenderComponent(RenderComponent):
-    def __init__(self, surfaceSize: Vector2, rectSize: Vector2, borderWidth: int, fillColor: Color, borderColor: Color):
+    def __init__(self, surfaceSize, rectSize, borderWidth, fillColor, borderColor):
         RenderComponent.__init__(self, surfaceSize)
         self.rectSize = rectSize
         self.borderWidth = borderWidth
@@ -66,32 +68,25 @@ class CellEntity(Entity):
     CELL_TYPE_EMPTY = 0
     CELL_TYPE_BLOCK = 1
 
-    def __init__(self, board, row: int, col: int, type: int, size: Vector2, priority=0, initialComponents=None):
+    def __init__(self, board, pos, type, rectSize, priority=0, initialComponents=None):
         Entity.__init__(self, priority, initialComponents)
         self._board = weakref.ref(board)
-        self._row = row
-        self._col = col
+        self._pos = pos
         self._type = type
-        self._size = size
+        self._rectSize = rectSize
 
     def init(self):
         Entity.init(self)
         if (self._type == CellEntity.CELL_TYPE_EMPTY):
-            self.addComponent(CellRenderComponent(self._size, self._size, 2, Color(25, 25, 25), Color.BLACK))
+            self.addComponent(CellRenderComponent(self._rectSize, self._rectSize, CELL_BORDER_WIDTH, Color(25, 25, 25), Color.BLACK))
         if (self._type == CellEntity.CELL_TYPE_BLOCK):
-            self.addComponent(CellRenderComponent(self._size, self._size, 2, Color.BLUE, Color.BLACK))
+            self.addComponent(CellRenderComponent(self._rectSize, self._rectSize, CELL_BORDER_WIDTH, Color.BLUE, Color.BLACK))
 
     def getBoard(self):
         return self._board()
 
     def getPos(self):
-        return Vector2(self._row, self._col)
-
-    def getRow(self):
-        return self._row
-
-    def getCol(self):
-        return self._col
+        return self._pos
 
     def getType(self):
         return self._type
@@ -111,7 +106,7 @@ class BoardEntity(Entity):
         for row in range(self._rows):
             for col in range(self._cols):
                 cellType = self._cellMatrix[row][col]
-                cellEntity = EntitySpawner.spawnEntity(CellEntity, self, row, col, cellType, self._cellSize)
+                cellEntity = EntitySpawner.spawnEntity(CellEntity, self, Vector2(row, col), cellType, self._cellSize)
                 cellEntity.getTransform().position = Vector2(col * self._cellSize.x, row * self._cellSize.y)
                 self._cells.append(cellEntity)
 
@@ -165,7 +160,7 @@ class SnakeEntity(Entity):
     def init(self):
         Entity.init(self)
         self._renderComponent = self.addComponent(
-            SnakeRenderComponent(Screen.getSize(), self._rectSize, 2, Color.RED, Color.BLACK))
+            SnakeRenderComponent(Screen.getSize(), self._rectSize, CELL_BORDER_WIDTH, Color.RED, Color.BLACK))
 
         self._inputComponent = self.addComponent(InputComponent())
         self._inputComponent.bindAction("left", InputEvent.EVENT_TYPE_PRESSED, lambda: self.changeDirection(DIRECTION_LEFT))
@@ -185,28 +180,56 @@ class SnakeEntity(Entity):
     def getBoard(self):
         return self._board
 
-    def getBodyPositions(self):
-        return iter(self._deque)
-
     def getHeadPos(self):
         return self._headPos
 
     def getNextHeadPos(self):
         return self._headPos + self._dir
 
+    def getBodyPositions(self):
+        return iter(self._deque)
+
     def changeDirection(self, newDir):
         if (newDir != self._dir * -1.0):
             self._dir = newDir
+
+
+class FoodEntity(Entity):
+    def __init__(self, board, pos, rectSize, priority=0, initialComponents=None):
+        Entity.__init__(self, priority, initialComponents)
+        self._board = board
+        self._pos = pos
+        self._rectSize = rectSize
+        self.setPos(self._pos)
+
+    def init(self):
+        Entity.init(self)
+        self._renderComponent = self.addComponent(
+            CellRenderComponent(self._rectSize, self._rectSize, CELL_BORDER_WIDTH, Color.GREEN, Color.BLACK))
+
+    def getBoard(self):
+        return self._board
+
+    def getPos(self):
+        return self._pos
+
+    def setPos(self, pos):
+        self._pos = pos
+        self._transform.position = Vector2(pos.y * self._rectSize.x, pos.x * self._rectSize.y)
 
 
 def run():
     pygame.init()
     Screen.init(width=600, height=450, flags=0, depth=32)
 
+    CELL_SIZE = Vector2(20, 20)
+
     backgroundEntity = EntitySpawner.spawnEntity(Entity)
     backgroundEntity.addComponent(RectRenderComponent(Screen.getSize(), Screen.getSize(), Color.BLACK))
-    boardEntity = EntitySpawner.spawnEntity(BoardEntity, getCellMatrix(), Vector2(20, 20))
-    EntitySpawner.spawnEntity(SnakeEntity, boardEntity, 5, 3, Vector2(10, 5), DIRECTION_RIGHT, Vector2(20, 20))
+    boardEntity = EntitySpawner.spawnEntity(BoardEntity, getCellMatrix(), CELL_SIZE)
+    # boardEntity.getTransform().position = Vector2(0, 40)
+    EntitySpawner.spawnEntity(SnakeEntity, boardEntity, 5, 3, Vector2(5, 5), DIRECTION_RIGHT, CELL_SIZE)
+    EntitySpawner.spawnEntity(FoodEntity, boardEntity, Vector2(10, 10), CELL_SIZE)
 
     GameLoop(fps=60).run()
     pygame.quit()
