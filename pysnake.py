@@ -153,6 +153,7 @@ class SnakeEntity(Entity):
 
         self.speed = speed
         self._passedDistance = 0.0
+        self._dirQueue = deque()
 
     def init(self):
         Entity.init(self)
@@ -167,12 +168,7 @@ class SnakeEntity(Entity):
 
     def tick(self, deltaTime):
         Entity.tick(self, deltaTime)
-        self._passedDistance += self.speed * deltaTime
-        if (self._passedDistance > 1.0):
-            self._passedDistance -= 1.0
-            self._deque.popleft()
-            self._deque.append(self.getNextHeadPos())
-            self._headPos = self.getNextHeadPos()
+        self.move_Internal(deltaTime)
 
     def getBoard(self):
         return self._board
@@ -187,8 +183,25 @@ class SnakeEntity(Entity):
         return iter(self._deque)
 
     def changeDirection(self, newDir):
-        if (newDir != self._dir * -1.0):
-            self._dir = newDir
+        length = len(self._dirQueue)
+        if (length == 2):
+            return
+
+        lastQueueDir = self._dir
+        if (length > 0):
+            lastQueueDir = self._dirQueue[length - 1]
+        if (newDir != lastQueueDir * -1.0):
+            self._dirQueue.append(newDir)
+
+    def move_Internal(self, deltaTime):
+        self._passedDistance += self.speed * deltaTime
+        if (self._passedDistance > 1.0):
+            if (len(self._dirQueue) > 0):
+                self._dir = self._dirQueue.popleft()
+            self._passedDistance -= 1.0
+            self._deque.popleft()
+            self._deque.append(self.getNextHeadPos())
+            self._headPos = self.getNextHeadPos()
 
 
 class FoodEntity(Entity):
