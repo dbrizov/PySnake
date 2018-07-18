@@ -1,6 +1,9 @@
 import pygame
 import weakref
+import random
 from collections import deque
+from engine.vector import Vector2
+from engine.color import Color
 from engine.screen import Screen
 from engine.gameloop import GameLoop
 from engine.entity import Entity
@@ -9,8 +12,7 @@ from engine.components import RenderComponent
 from engine.components import RectRenderComponent
 from engine.components import InputComponent
 from engine.input import InputEvent
-from engine.vector import Vector2
-from engine.color import Color
+from engine.events import EventHook
 
 
 DIRECTION_LEFT = Vector2(0, -1)
@@ -23,32 +25,42 @@ CELL_BORDER_WIDTH = 2
 CELL_TYPE_BLOCK = 1
 CELL_TYPE_EMPTY = 0
 
+CELL_MATRIX = [
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+]
 
-def getCellMatrix():
-    matrix = [
-        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-    ]
-
-    return matrix
+CELL_MATRIX_2 = [
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+]
 
 
 class CellRenderComponent(RenderComponent):
@@ -73,6 +85,7 @@ class CellEntity(Entity):
         self._board = weakref.ref(board)
         self._pos = pos
         self._type = type
+        self.food = None
 
     def init(self):
         Entity.init(self)
@@ -107,6 +120,12 @@ class BoardEntity(Entity):
                 cellEntity = EntitySpawner.spawnEntity(CellEntity, self, Vector2(row, col), cellType)
                 cellEntity.getTransform().position = Vector2(col * CELL_SIZE.x, row * CELL_SIZE.y)
                 self._cells.append(cellEntity)
+
+    def getRows(self):
+        return self._rows
+
+    def getCols(self):
+        return self._cols
 
     def getCell(self, row, col):
         return self._cells[self.getCellIndex_Internal(row, col)]
@@ -151,9 +170,11 @@ class SnakeEntity(Entity):
         for i in range(initialSize):
             self._deque.appendleft(initialHeadPos - initialDir * i)
 
-        self.speed = speed
+        self._speed = speed
         self._passedDistance = 0.0
         self._dirQueue = deque()
+        self._ateFood = False
+        self.onFoodEaten = EventHook()
 
     def init(self):
         Entity.init(self)
@@ -168,10 +189,20 @@ class SnakeEntity(Entity):
 
     def tick(self, deltaTime):
         Entity.tick(self, deltaTime)
-        self.move_Internal(deltaTime)
+        self._passedDistance += self._speed * deltaTime
+        if (self._passedDistance > 1.0):
+            self._passedDistance -= 1.0
+            self.move_Internal()
+            self.hangleCollisions_Internal()
 
     def getBoard(self):
         return self._board
+
+    def getSpeed(self):
+        return self._speed
+
+    def setSpeed(self, speed):
+        self._speed = speed
 
     def getHeadPos(self):
         return self._headPos
@@ -193,15 +224,45 @@ class SnakeEntity(Entity):
         if (newDir != lastQueueDir * -1.0):
             self._dirQueue.append(newDir)
 
-    def move_Internal(self, deltaTime):
-        self._passedDistance += self.speed * deltaTime
-        if (self._passedDistance > 1.0):
-            if (len(self._dirQueue) > 0):
-                self._dir = self._dirQueue.popleft()
-            self._passedDistance -= 1.0
+    def move_Internal(self):
+        if (self._ateFood):
+            self._ateFood = False
+        else:
             self._deque.popleft()
-            self._deque.append(self.getNextHeadPos())
-            self._headPos = self.getNextHeadPos()
+
+        if (len(self._dirQueue) > 0):
+            self._dir = self._dirQueue.popleft()
+        self._deque.append(self.getNextHeadPos())
+        self._headPos = self.getNextHeadPos()
+
+    def hangleCollisions_Internal(self):
+        # Handle collision with block cells
+        headCell = self._board.getCell(self._headPos.x, self._headPos.y)
+        if (headCell.getType() == CELL_TYPE_BLOCK):
+            EntitySpawner.destroyEntity(self)
+
+        # Handle collision with itself
+        bodyPositions = list(self.getBodyPositions())
+        bodyPositions.remove(self._headPos)
+        if (self._headPos in bodyPositions):
+            EntitySpawner.destroyEntity(self)
+
+        # Handle collision with food
+        for cellPos in self.getBodyPositions():
+            cell = self._board.getCell(cellPos.x, cellPos.y)
+            if (cell.food is not None):
+                self._ateFood = True
+                food = cell.food
+                cell.food = None
+                EntitySpawner.destroyEntity(food)
+                self.onFoodEaten.invoke()
+                break
+
+    def eatFood_Internal(self, cell, food):
+        self._ateFood = True
+        cell.food = None
+        EntitySpawner.destroyEntity(food)
+        self.onFoodEaten.invoke()
 
 
 class FoodEntity(Entity):
@@ -210,6 +271,7 @@ class FoodEntity(Entity):
         self._board = board
         self._pos = pos
         self.setPos(self._pos)
+        self._board.getCell(self._pos.x, self._pos.y).food = self
 
     def init(self):
         Entity.init(self)
@@ -227,16 +289,32 @@ class FoodEntity(Entity):
         self._transform.position = Vector2(pos.y * CELL_SIZE.x, pos.x * CELL_SIZE.y)
 
 
+def spawnFood(board, snake):
+    randRow = random.randrange(1, board.getRows() - 1)
+    randCol = random.randrange(1, board.getCols() - 1)
+    while (board.getCell(randRow, randCol).getType() == CELL_TYPE_BLOCK or
+           Vector2(randRow, randCol) in snake.getBodyPositions()):
+        randRow = random.randrange(1, board.getRows() - 1)
+        randCol = random.randrange(1, board.getCols() - 1)
+
+    EntitySpawner.spawnEntity(FoodEntity, board, Vector2(randRow, randCol))
+
+
+def setSnakeSpeed(snake, speed):
+    snake.speed = speed
+
+
 def run():
     pygame.init()
-    Screen.init(width=600, height=450, flags=0, depth=32)
+    Screen.init(width=500, height=450, flags=0, depth=32)
 
     backgroundEntity = EntitySpawner.spawnEntity(Entity)
     backgroundEntity.addComponent(RectRenderComponent(Screen.getSize(), Screen.getSize(), Color.BLACK))
-    boardEntity = EntitySpawner.spawnEntity(BoardEntity, getCellMatrix())
-    # boardEntity.getTransform().position = Vector2(0, 40)
-    EntitySpawner.spawnEntity(SnakeEntity, boardEntity, 5, 3, Vector2(5, 5), DIRECTION_RIGHT)
-    EntitySpawner.spawnEntity(FoodEntity, boardEntity, Vector2(10, 10))
+    boardEntity = EntitySpawner.spawnEntity(BoardEntity, CELL_MATRIX_2)
+    snakeEntity = EntitySpawner.spawnEntity(SnakeEntity, boardEntity, 5, 3, Vector2(3, 3), DIRECTION_RIGHT)
+    snakeEntity.onFoodEaten += lambda: spawnFood(boardEntity, snakeEntity)
+    snakeEntity.onFoodEaten += lambda: snakeEntity.setSpeed(snakeEntity.getSpeed() + 0.1)
+    spawnFood(boardEntity, snakeEntity)
 
     GameLoop(fps=60).run()
     pygame.quit()
