@@ -118,6 +118,10 @@ class TextRenderComponent(Component):
     def setColor(self, color):
         self._color = color
 
+    def getRectSize(self):
+        width, height = self._font.size(self._text)
+        return Vector2(width, height)
+
     def drawText_Internal(self):
         surface = self._font.render(self._text, True, self._color)
         Screen.getSurface().blit(surface, self.getEntity().getTransform().position)

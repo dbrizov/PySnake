@@ -4,6 +4,7 @@ import random
 from collections import deque
 from engine.vector import Vector2
 from engine.color import Color
+from engine.time import Time
 from engine.screen import Screen
 from engine.gameloop import GameLoop
 from engine.entity import Entity
@@ -290,43 +291,87 @@ class FoodEntity(Entity):
         self._transform.position = Vector2(pos.y * CELL_SIZE.x, pos.x * CELL_SIZE.y)
 
 
-def spawnFood(board, snake):
-    randRow = random.randrange(1, board.getRows() - 1)
-    randCol = random.randrange(1, board.getCols() - 1)
-    while (board.getCell(randRow, randCol).getType() == CELL_TYPE_BLOCK or
-           Vector2(randRow, randCol) in snake.getBodyPositions()):
-        randRow = random.randrange(1, board.getRows() - 1)
-        randCol = random.randrange(1, board.getCols() - 1)
+class GameControllerEntity(Entity):
+    def init(self):
+        Entity.init(self)
+        self._inputComponent = self.addComponent(InputComponent())
+        self._inputComponent.bindAction("pause", InputEvent.EVENT_TYPE_PRESSED, self.togglePaused)
+        self._inputComponent.bindAction("cancel", InputEvent.EVENT_TYPE_PRESSED, self.quit)
 
-    EntitySpawner.spawnEntity(FoodEntity, board, Vector2(randRow, randCol))
+        self._backgroundEntity = EntitySpawner.spawnEntity(Entity)
+        self._backgroundEntity.addComponent(RectRenderComponent(Screen.getSize(), Screen.getSize(), Color.BLACK))
 
+        self._boardEntity = EntitySpawner.spawnEntity(BoardEntity, CELL_MATRIX_2)
 
-def setSnakeSpeed(snake, speed):
-    snake.speed = speed
+        self._snakeEntity = EntitySpawner.spawnEntity(SnakeEntity, self._boardEntity, 5, 3, Vector2(3, 3), DIRECTION_RIGHT)
+        self._snakeEntity.onFoodEaten += lambda: self.spawnFood()
+        self._snakeEntity.onFoodEaten += lambda: self.increaseScore()
+        self._snakeEntity.onFoodEaten += lambda: self.increaseSnakeSpeed()
+        self.spawnFood()
+
+        self._pausedTextEntity = EntitySpawner.spawnEntity(Entity)
+        self._pausedTextComp = self._pausedTextEntity.addComponent(TextRenderComponent())
+        self._pausedTextComp.setFontName("mono")
+        self._pausedTextComp.setFontSize(20)
+        self._pausedTextComp.setBold(True)
+        self._pausedTextComp.setColor(Color.WHITE)
+        self._pausedTextComp.setText("PAUSED")
+        pausedTextRectSize = self._pausedTextComp.getRectSize()
+        boardRectSize = Vector2(self._boardEntity.getCols() * CELL_SIZE.x, self._boardEntity.getRows() * CELL_SIZE.y)
+        self._pausedTextEntity.getTransform().position = Vector2((boardRectSize.x - pausedTextRectSize.x) // 2,
+                                                                 (boardRectSize.y - pausedTextRectSize.y) // 2)
+
+        self._scoreTextEntity = EntitySpawner.spawnEntity(Entity)
+        self._scoreTextEntity.getTransform().position = Vector2(0, boardRectSize.y)
+        self._scoreTextComp = self._scoreTextEntity.addComponent(TextRenderComponent())
+        self._scoreTextComp.setFontName("mono")
+        self._scoreTextComp.setFontSize(20)
+        self._scoreTextComp.setBold(True)
+        self._scoreTextComp.setColor(Color.WHITE)
+        self._scoreTextComp.setText("SCORE:0")
+
+        self._score = 0
+        self._paused = True
+        self.setPaused(True)
+
+    def spawnFood(self):
+        randRow = random.randrange(1, self._boardEntity.getRows() - 1)
+        randCol = random.randrange(1, self._boardEntity.getCols() - 1)
+        while (self._boardEntity.getCell(randRow, randCol).getType() == CELL_TYPE_BLOCK or
+               Vector2(randRow, randCol) in self._snakeEntity.getBodyPositions()):
+            randRow = random.randrange(1, self._boardEntity.getRows() - 1)
+            randCol = random.randrange(1, self._boardEntity.getCols() - 1)
+
+        EntitySpawner.spawnEntity(FoodEntity, self._boardEntity, Vector2(randRow, randCol))
+
+    def increaseScore(self):
+        self._score += 1
+        self._scoreTextComp.setText("SCORE:{0}".format(self._score))
+
+    def increaseSnakeSpeed(self):
+        self._snakeEntity.setSpeed(self._snakeEntity.getSpeed() + 0.1)
+
+    def setPaused(self, paused):
+        self._paused = paused
+        if (paused):
+            Time.setTimeScale(0.0)
+            self._pausedTextEntity.canTick = True
+        else:
+            Time.setTimeScale(1.0)
+            self._pausedTextEntity.canTick = False
+
+    def togglePaused(self):
+        self.setPaused(not self._paused)
+
+    def quit(self):
+        pygame.quit()
 
 
 def run():
     pygame.init()
     Screen.init(width=500, height=450, flags=0, depth=32)
 
-    backgroundEntity = EntitySpawner.spawnEntity(Entity)
-    backgroundEntity.addComponent(RectRenderComponent(Screen.getSize(), Screen.getSize(), Color.BLACK))
-
-    boardEntity = EntitySpawner.spawnEntity(BoardEntity, CELL_MATRIX_2)
-
-    snakeEntity = EntitySpawner.spawnEntity(SnakeEntity, boardEntity, 5, 3, Vector2(3, 3), DIRECTION_RIGHT)
-    snakeEntity.onFoodEaten += lambda: spawnFood(boardEntity, snakeEntity)
-    snakeEntity.onFoodEaten += lambda: snakeEntity.setSpeed(snakeEntity.getSpeed() + 0.1)
-    spawnFood(boardEntity, snakeEntity)
-
-    scoreEntity = EntitySpawner.spawnEntity(Entity)
-    scoreEntity.getTransform().position = Vector2(0, boardEntity.getRows() * CELL_SIZE.y)
-    scoreText = scoreEntity.addComponent(TextRenderComponent())
-    scoreText.setFontName("mono")
-    scoreText.setFontSize(20)
-    scoreText.setBold(True)
-    scoreText.setColor(Color.WHITE)
-    scoreText.setText("SCORE:0")
+    EntitySpawner.spawnEntity(GameControllerEntity)
 
     GameLoop(fps=60).run()
     pygame.quit()

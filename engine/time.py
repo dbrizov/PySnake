@@ -5,6 +5,7 @@ class Time:
     _clock = time.Clock()
     _fps = 60
     _playTime = 0.0
+    _timeScale = 1.0
 
     @staticmethod
     def tick_Internal():
@@ -22,8 +23,19 @@ class Time:
 
     @staticmethod
     def getFps():
-        return Time. _clock.get_fps()
+        return Time._clock.get_fps()
 
     @staticmethod
     def setFps(fps):
         Time._fps = fps
+
+    @staticmethod
+    def getTimeScale():
+        return Time._timeScale
+
+    @staticmethod
+    def setTimeScale(timeScale):
+        if (timeScale < 0.0):
+            timeScale = 0.0
+
+        Time._timeScale = timeScale

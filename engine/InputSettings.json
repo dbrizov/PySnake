@@ -15,6 +15,15 @@
         "down": [
             "K_DOWN",
             "K_s"
+        ],
+        "submit": [
+            "K_RETURN"
+        ],
+        "cancel": [
+            "K_ESCAPE"
+        ],
+        "pause": [
+            "K_SPACE"
         ]
     },
     "axisMappings": {

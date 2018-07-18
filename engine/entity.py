@@ -13,6 +13,7 @@ class Entity:
 
         `initialComponents` -> the initial components list
         """
+        self.canTick = True
         self._isInPlay = False
         self._priority = priority
         self._transform = TransformComponent()
@@ -37,6 +38,10 @@ class Entity:
     def tick(self, deltaTime):
         for comp in self._components:
             comp.tick(deltaTime)
+
+    def tick_Internal(self, deltaTime):
+        if (self.canTick):
+            self.tick(deltaTime)
 
     def isInPlay(self):
         return self._isInPlay
