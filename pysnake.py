@@ -10,6 +10,7 @@ from engine.entity import Entity
 from engine.entity import EntitySpawner
 from engine.components import RenderComponent
 from engine.components import RectRenderComponent
+from engine.components import TextRenderComponent
 from engine.components import InputComponent
 from engine.input import InputEvent
 from engine.events import EventHook
@@ -310,11 +311,22 @@ def run():
 
     backgroundEntity = EntitySpawner.spawnEntity(Entity)
     backgroundEntity.addComponent(RectRenderComponent(Screen.getSize(), Screen.getSize(), Color.BLACK))
+
     boardEntity = EntitySpawner.spawnEntity(BoardEntity, CELL_MATRIX_2)
+
     snakeEntity = EntitySpawner.spawnEntity(SnakeEntity, boardEntity, 5, 3, Vector2(3, 3), DIRECTION_RIGHT)
     snakeEntity.onFoodEaten += lambda: spawnFood(boardEntity, snakeEntity)
     snakeEntity.onFoodEaten += lambda: snakeEntity.setSpeed(snakeEntity.getSpeed() + 0.1)
     spawnFood(boardEntity, snakeEntity)
+
+    scoreEntity = EntitySpawner.spawnEntity(Entity)
+    scoreEntity.getTransform().position = Vector2(0, boardEntity.getRows() * CELL_SIZE.y)
+    scoreText = scoreEntity.addComponent(TextRenderComponent())
+    scoreText.setFontName("mono")
+    scoreText.setFontSize(20)
+    scoreText.setBold(True)
+    scoreText.setColor(Color.WHITE)
+    scoreText.setText("SCORE:0")
 
     GameLoop(fps=60).run()
     pygame.quit()

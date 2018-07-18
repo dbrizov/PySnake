@@ -29,7 +29,7 @@ class Component(object):
     def exitPlay(self):
         pass
 
-    def tick(self, delta_time):
+    def tick(self, deltaTime):
         pass
 
     def getEntity(self):
@@ -68,6 +68,59 @@ class RectRenderComponent(RenderComponent):
             (self.posOffset.x, self.posOffset.y, self.rectSize.x, self.rectSize.y),
             self.border)
         Screen.getSurface().blit(self._surface, self.getEntity().getTransform().position)
+
+
+class TextRenderComponent(Component):
+    def __init__(self):
+        Component.__init__(self)
+        self._priority = ComponentPriority.RENDER_COMPONENT
+        self._fontSize = 20
+        self._fontName = "mono"
+        self._font = pygame.font.SysFont(self._fontName, self._fontSize)
+        self._bold = False
+        self._text = ""
+        self._color = Color.WHITE
+
+    def tick(self, deltaTime):
+        Component.tick(self, deltaTime)
+        self.drawText_Internal()
+
+    def getFontSize(self):
+        return self._fontSize
+
+    def setFontSize(self, fontSize):
+        self._fontSize = fontSize
+        self._font = pygame.font.SysFont(self._fontName, self._fontSize, self._bold)
+
+    def getFontName(self):
+        return self._fontName
+
+    def setFontName(self, fontName):
+        self._fontName = fontName
+        self._font = pygame.font.SysFont(self._fontName, self._fontSize, self._bold)
+
+    def isBold(self):
+        return self._bold
+
+    def setBold(self, bold):
+        self._bold = bold
+        self._font = pygame.font.SysFont(self._fontName, self._fontSize, self._bold)
+
+    def getText(self):
+        return self._text
+
+    def setText(self, text):
+        self._text = text
+
+    def getColor(self):
+        return self._color
+
+    def setColor(self, color):
+        self._color = color
+
+    def drawText_Internal(self):
+        surface = self._font.render(self._text, True, self._color)
+        Screen.getSurface().blit(surface, self.getEntity().getTransform().position)
 
 
 class InputComponent(Component):
