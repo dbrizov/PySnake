@@ -264,12 +264,6 @@ class SnakeEntity(Entity):
                 self.onFoodEaten.invoke()
                 break
 
-    def eatFood_Internal(self, cell, food):
-        self._ateFood = True
-        cell.food = None
-        EntitySpawner.destroyEntity(food)
-        self.onFoodEaten.invoke()
-
 
 class FoodEntity(Entity):
     def __init__(self, board, pos, priority=0, initialComponents=None):
