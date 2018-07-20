@@ -221,11 +221,13 @@ class Input:
             for posKey in axisPositiveKeys:
                 if (posKey in Input._pressedKeysThisFrame):
                     anyPositiveKey = True
+                    break
 
             anyNegativeKey = False
             for negKey in axisNegativeKeys:
                 if (negKey in Input._pressedKeysThisFrame):
                     anyNegativeKey = True
+                    break
 
             axisValue = Input._axisValues[axis]
             if ((anyPositiveKey and anyNegativeKey) or (not (anyPositiveKey or anyNegativeKey))):
