@@ -5,9 +5,13 @@ class Vector2(tuple):
     def __new__(cls, x, y):
         return tuple.__new__(cls, (x, y))
 
-    def __init__(self, x, y):
-        self.x = self[0]
-        self.y = self[1]
+    @property
+    def x(self):
+        return self[0]
+
+    @property
+    def y(self):
+        return self[1]
 
     def __add__(self, vector):
         return Vector2(self.x + vector.x, self.y + vector.y)

@@ -2,11 +2,21 @@ class Color(tuple):
     def __new__(cls, r, g, b, a=255):
         return tuple.__new__(cls, (r, g, b, a))
 
-    def __init__(self, r, g, b, a=255):
-        self.r = self[0]
-        self.g = self[1]
-        self.b = self[2]
-        self.a = self[3]
+    @property
+    def r(self):
+        return self[0]
+
+    @property
+    def g(self):
+        return self[1]
+
+    @property
+    def b(self):
+        return self[2]
+
+    @property
+    def a(self):
+        return self[3]
 
     def __add__(self, color):
         return Color(self.r + color.r, self.g + color.g, self.b + color.b, self.a + color.a)
@@ -22,12 +32,6 @@ class Color(tuple):
 
     def __str__(self):
         return "({0}, {1}, {2}, {3})".format(self.r, self.b, self.b, self.a)
-
-    def __iter__(self):
-        yield self.r
-        yield self.g
-        yield self.b
-        yield self.a
 
 
 Color.NONE = Color(0, 0, 0, 0)
